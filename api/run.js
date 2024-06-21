@@ -1,34 +1,20 @@
-const chromium = require("@sparticuz/chromium")
-const puppeteer = require("puppeteer-core")
+const chrome = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer-core');
+const production = process.env.NODE_ENV === 'production';
 
-export default async function handler(request, response) {
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath:
-      process.env.CHROME_EXECUTABLE_PATH || (await chromium.executablePath),
-    headless: true,
-    ignoreHTTPSErrors: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--single-process",
-    ],
-    ignoreDefaultArgs: ["--disable-extensions"],
-    ignoreHTTPSErrors: true,
-  })
-  const page = await browser.newPage()
-  await page.goto("https://vercel.com/")
-  const title = await page.title()
-
-  await page.close()
-
-  await browser.close()
-
-  response.status(200).json({
-    body: request.body,
-    cookies: request.cookies,
-    title,
-    chromium: await chromium.executablePath,
-  })
-}
+const getPage = async () => {
+    const browser = await puppeteer.launch(
+        production ? {
+            args: chrome.args,
+            defaultViewport: chrome.defaultViewport,
+            executablePath: await chrome.executablePath(),
+            headless: 'new',
+            ignoreHTTPSErrors: true
+        } : {
+            headless: 'new',
+            executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        }
+    );
+    const page = await browser.newPage();
+    return page;
+};
